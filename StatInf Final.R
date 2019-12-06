@@ -15,8 +15,6 @@ mu <- 1/lambda
 
 test <- replicate(sim, rexp(n, lambda))
 meantest <- data.frame(means = apply(test, 2, mean))
-hist(meantest$means, breaks = 30)
-#Looks fairly normally distributed at this point
 
 #Sample mean turns out to be close to the expected 5 at 5.02
 
