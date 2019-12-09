@@ -1,0 +1,137 @@
+---
+title: "Statistical Inference part 2"
+author: "JRP"
+date: "12/9/2019"
+output:
+  html_document:
+    df_print: paged
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggpubr)
+```
+
+
+```{r, part2}
+#PART 2
+tooth <- ToothGrowth
+
+```
+
+This dataset contains information on:
+
+The Effect of Vitamin C on Tooth Growth in Guinea Pigs 
+
+Vitamins were administered via orange juice (OJ) or ascorbic acid (VC)
+
+```{r, b}
+
+g <- ggplot(tooth, aes(x = supp, y = len, fill = supp))
+g +geom_boxplot()+labs(title = "Supplement effect on tooth length")
+tooth$dose <- as.factor(tooth$dose)
+h <- ggplot(tooth, aes(x = dose, y = len, fill = dose))
+h +geom_boxplot()+labs(title = "Dose effect on tooth length")
+
+```
+
+
+We can tell from our preliminary graphs that VC seems to have a weaker effect on tooth length thanif OJ was administered. Also, unsurprisingly, if the dose is higher tooth length has a higher value
+
+To confirm this statistically we do the following tests:
+
+```{r, c}
+group <- as.character(tooth$supp)
+testStat <- function(w, g) mean (w[g=="OJ"]) - mean (w[g =="VC"])
+observedStat <- testStat(tooth$len, group)
+observedStat
+
+```
+
+The observed difference between groups is 3.7, with OJ having a larger effect on length than VC
+
+
+```{r, d}
+permutations <- sapply(1:1000, function(i) testStat (tooth$len, sample(group)))
+mean(permutations > observedStat)
+```
+
+After 1000 permutations we found 3.5% of the datasets were larger than the original data
+
+So we reject the null hypothesis at an alpha of 0.05, but would not for an alpha of 0.01
+
+```{r,e}
+
+ggplot()+aes(permutations)+geom_histogram(binwidth=1, color="lightblue")+
+        geom_vline(aes(xintercept=3.7, color="red", size =0.05), show.legend = FALSE)+
+        labs(title = "Permutation Distribution")
+```
+
+From our histogram we see that most observations fall below that mean we calculated of 3.7.
+
+So a 0 mean difference is relatively unlikely at first glance
+
+Next let's build the Confidence intervals and p - values of our observations based on supplement
+
+```{r, f}
+
+g1 <- tooth$len[1:30]; g2 <- tooth$len[31:60]
+difference <-  g2 - g1
+t.test(difference, paired = FALSE)
+
+```
+Based on this we see we have our confidence interval and a very low p value of 0.0025 which implies that OJ has a more positive effect on length than VC of 1.41 to 5.99 in 95% of cases
+
+Now we do the same for dose for both supplements separately
+
+```{r, g}
+
+h1oj <- tooth %>% 
+      filter(supp == "OJ") %>% 
+      arrange(dose) %>% 
+      slice(1:10) %>% 
+      select(len)
+h2oj <- tooth %>% 
+  filter(supp == "OJ") %>% 
+  arrange(dose) %>% 
+  slice(11:20) %>%
+  select(len)
+h3oj <- tooth %>%
+  filter(supp == "OJ") %>% 
+  arrange(dose) %>% 
+  slice(21:30) %>% 
+  select(len)
+difference2oj <- h3oj-h2oj
+t.test(difference2oj, paired = FALSE)
+difference3oj <- h2oj-h1oj
+t.test(difference3oj, paired = FALSE)
+```
+
+In the case of OJ it seems that the p value is a bit higher when comparing a dose of 2 with 1
+
+With a possibility that there is no noticeable effect (lower CI goes below 0) which passes the p-test at 10%. Whereas for doses of 1 to 0.5 the effect is clearly positive, with a very low p-value and high CI.
+
+```{r, h}
+h1vc <- tooth %>% 
+  filter(supp == "VC") %>% 
+  arrange(dose) %>% 
+  slice(1:10) %>% 
+  select(len)
+h2vc <- tooth %>% 
+  filter(supp == "VC") %>% 
+  arrange(dose) %>% 
+  slice(11:20) %>%
+  select(len)
+h3vc <- tooth %>% 
+  filter(supp == "VC") %>% 
+  arrange(dose) %>% 
+  slice(21:30) %>% 
+  select(len)
+difference2vc <- h3vc-h2vc
+t.test(difference2vc, paired = FALSE)
+difference3vc <- h2vc-h1vc
+t.test(difference3vc, paired = FALSE)
+```
+As for VC we can see that increased dosing has a very statstically significant positive effect on length, with high/positive CI and p-values that are extremely low. The Ho that the mean is 0 is very easily rejected.
